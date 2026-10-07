@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: social-comment-abbreviation-collector
+
+server:
+  port: 8080
+
+youtube:
+  api:
+    base-url: https://www.googleapis.com/youtube/v3
+    key: ${YOUTUBE_API_KEY}
+
+management:
+    endpoints:
+      web:
+        exposure:
+          include: health
