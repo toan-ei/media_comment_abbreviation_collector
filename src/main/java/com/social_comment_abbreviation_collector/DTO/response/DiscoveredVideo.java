@@ -7,6 +7,7 @@ public record DiscoveredVideo(
         String title,
         String channelTitle,
         Instant publishedAt,
-        String url
+        String url,
+        String channelId
 ) {
 }

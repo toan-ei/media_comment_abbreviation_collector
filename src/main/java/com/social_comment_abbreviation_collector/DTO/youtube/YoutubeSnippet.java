@@ -8,6 +8,7 @@ import java.time.Instant;
 public record YoutubeSnippet(
         Instant publishedAt,
         String title,
-        String channelTitle
+        String channelTitle,
+        String channelId
 ) {
 }

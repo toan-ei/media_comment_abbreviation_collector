@@ -1,7 +1,7 @@
 package com.social_comment_abbreviation_collector.controller;
 
 import com.social_comment_abbreviation_collector.DTO.response.DiscoveredVideo;
-import com.social_comment_abbreviation_collector.service.YoutubeDiscoveryService;
+import com.social_comment_abbreviation_collector.discovery.YoutubeDiscoveryService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
