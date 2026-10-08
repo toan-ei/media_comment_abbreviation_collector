@@ -5,6 +5,7 @@ public record DiscoveryResult(
         String keyword,
         int found,
         int inserted,
-        int alreadyExists
+        int alreadyExists,
+        int jobsCreated
 ) {
 }

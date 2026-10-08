@@ -3,9 +3,11 @@ package com.social_comment_abbreviation_collector.discovery;
 import com.social_comment_abbreviation_collector.DTO.response.ContentSaveResult;
 import com.social_comment_abbreviation_collector.DTO.response.DiscoveredVideo;
 import com.social_comment_abbreviation_collector.DTO.response.DiscoveryResult;
+import com.social_comment_abbreviation_collector.DTO.response.PersistenceResult;
 import com.social_comment_abbreviation_collector.DTO.youtube.YoutubeSearchResponse;
 import com.social_comment_abbreviation_collector.client.YoutubeClient;
 import com.social_comment_abbreviation_collector.service.ContentService;
+import com.social_comment_abbreviation_collector.service.DiscoveryPersistenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ import java.util.List;
 public class YoutubeDiscoveryService {
     private final YoutubeClient youtubeClient;
     private final ContentService contentService;
+    private final DiscoveryPersistenceService discoveryPersistenceService;
 
     public List<DiscoveredVideo> search(String keyword, int maxResults){
 
@@ -44,14 +47,15 @@ public class YoutubeDiscoveryService {
 
         List<DiscoveredVideo> videos = search(keyword, maxResults);
 
-        ContentSaveResult result = contentService.contentSaveResult(videos);
+        PersistenceResult result = discoveryPersistenceService.persistYoutubeDiscovery(videos);
 
         log.info(
                 "YouTube discovery completed keyword={}, found={}, inserted={}, alreadyExists={}",
                 keyword,
                 result.total(),
                 result.inserted(),
-                result.alreadyExists()
+                result.alreadyExists(),
+                result.jobsCreated()
         );
 
         return new DiscoveryResult(
@@ -59,7 +63,8 @@ public class YoutubeDiscoveryService {
                 keyword,
                 result.total(),
                 result.inserted(),
-                result.alreadyExists()
+                result.alreadyExists(),
+                result.jobsCreated()
         );
     }
 }

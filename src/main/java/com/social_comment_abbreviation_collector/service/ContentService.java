@@ -1,5 +1,6 @@
 package com.social_comment_abbreviation_collector.service;
 
+import com.social_comment_abbreviation_collector.DTO.response.ContentPersistenceResult;
 import com.social_comment_abbreviation_collector.DTO.response.ContentSaveResult;
 import com.social_comment_abbreviation_collector.DTO.response.DiscoveredVideo;
 import com.social_comment_abbreviation_collector.entity.Content;
@@ -20,9 +21,9 @@ public class ContentService {
     private final ContentRepository contentRepository;
 
     @Transactional
-    public ContentSaveResult contentSaveResult(List<DiscoveredVideo> videos){
+    public ContentPersistenceResult contentSaveResult(List<DiscoveredVideo> videos){
         if(videos == null || videos.isEmpty()){
-            return new ContentSaveResult(0, 0, 0);
+            return new ContentPersistenceResult(0, 0, 0, List.of());
         }
 
         List<String> externalIds = videos.stream().map(DiscoveredVideo::videoId).distinct().toList();
@@ -50,12 +51,13 @@ public class ContentService {
                 )
                 .toList();
 
-        contentRepository.saveAll(newContents);
+        List<Content> contents = contentRepository.saveAll(newContents);
 
-        return new ContentSaveResult(
+        return new ContentPersistenceResult(
                 videos.size(),
                 newContents.size(),
-                videos.size() - newContents.size()
+                videos.size() - newContents.size(),
+                contents
         );
     }
 }
