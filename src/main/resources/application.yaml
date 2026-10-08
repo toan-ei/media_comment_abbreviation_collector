@@ -33,3 +33,12 @@ management:
       web:
         exposure:
           include: health
+
+crawler:
+  worker:
+    enabled: true
+    delay-ms: 2000
+
+  recovery:
+    delay-ms: 60000
+    processing-timeout-minutes: 30
