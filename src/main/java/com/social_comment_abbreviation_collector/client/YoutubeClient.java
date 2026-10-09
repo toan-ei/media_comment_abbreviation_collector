@@ -2,7 +2,8 @@ package com.social_comment_abbreviation_collector.client;
 
 import com.social_comment_abbreviation_collector.DTO.Error.GoogleApiErrorResponse;
 import com.social_comment_abbreviation_collector.DTO.youtube.YoutubeSearchResponse;
-import com.social_comment_abbreviation_collector.DTO.youtube.comment.YoutubeCommentThreatResponse;
+import com.social_comment_abbreviation_collector.DTO.youtube.comment.YoutubeCommentListRepsonse;
+import com.social_comment_abbreviation_collector.DTO.youtube.comment.YoutubeCommentThreadResponse;
 import com.social_comment_abbreviation_collector.config.YoutubeProperties;
 import com.social_comment_abbreviation_collector.exception.RetryableCrawlException;
 import com.social_comment_abbreviation_collector.exception.YoutubeApiException;
@@ -33,12 +34,12 @@ public class YoutubeClient {
                 .retrieve().body(YoutubeSearchResponse.class);
     }
 
-    public YoutubeCommentThreatResponse getCommentThreads(String videoId, int maxResults, String pageToken){
+    public YoutubeCommentThreadResponse getCommentThreads(String videoId, int maxResults, String pageToken){
         try{
             return youtubeRestClient.get().uri(uriBuilder -> {
                 var builder = uriBuilder
                         .path("/commentThreads")
-                        .queryParam("part", "snippet")
+                        .queryParam("part", "snippet,replies")
                         .queryParam("videoId", videoId)
                         .queryParam("maxResults", maxResults)
                         .queryParam("textFormat", "plainText")
@@ -49,7 +50,7 @@ public class YoutubeClient {
                 }
 
                 return builder.build();
-            }).retrieve().body(YoutubeCommentThreatResponse.class);
+            }).retrieve().body(YoutubeCommentThreadResponse.class);
         } catch (RestClientResponseException e) {
             throw parseYoutubeException(e);
 
@@ -60,32 +61,47 @@ public class YoutubeClient {
 
     }
 
-    private YoutubeApiException parseYoutubeException(
-            RestClientResponseException exception
-    ) {
+    public YoutubeCommentListRepsonse getReplies(String parentCommentId, String pageToken){
+        try{
+            return youtubeRestClient.get()
+                    .uri(uriBuilder -> {
+                        var builder =
+                                uriBuilder
+                                        .path("/comments")
+                                        .queryParam("part", "snippet")
+                                        .queryParam("parentId", parentCommentId)
+                                        .queryParam("maxResults", 100)
+                                        .queryParam("textFormat", "plainText")
+                                        .queryParam("key", youtubeProperties.key());
+
+                        if (pageToken != null && !pageToken.isBlank()) {
+                            builder.queryParam("pageToken", pageToken);
+                        }
+
+                        return builder.build();
+                    }).retrieve().body(YoutubeCommentListRepsonse.class);
+        } catch (RestClientResponseException e){
+            throw parseYoutubeException(e);
+        } catch (RestClientException e) {
+            throw new RetryableCrawlException("Failed to retrieve YouTube replies", e);
+        }
+    }
+
+
+    private YoutubeApiException parseYoutubeException(RestClientResponseException exception) {
 
         String reason = null;
         String message = exception.getMessage();
 
         try {
-
-            GoogleApiErrorResponse response =
-                    objectMapper.readValue(
-                            exception.getResponseBodyAsString(),
-                            GoogleApiErrorResponse.class
-                    );
+            GoogleApiErrorResponse response = objectMapper
+                    .readValue(exception.getResponseBodyAsString(), GoogleApiErrorResponse.class);
 
             if (response.error() != null) {
-
                 message = response.error().message();
 
-                if (response.error().errors() != null
-                        && !response.error()
-                        .errors()
-                        .isEmpty()) {
-
-                    reason =
-                            response.error()
+                if (response.error().errors() != null && !response.error().errors().isEmpty()) {
+                    reason = response.error()
                                     .errors()
                                     .getFirst()
                                     .reason();

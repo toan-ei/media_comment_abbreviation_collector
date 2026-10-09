@@ -42,3 +42,7 @@ crawler:
   recovery:
     delay-ms: 60000
     processing-timeout-minutes: 30
+
+  youtube:
+    fetch-replies: true
+    page-size: 100
