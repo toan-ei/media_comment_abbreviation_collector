@@ -1,6 +1,8 @@
 package com.social_comment_abbreviation_collector.worker;
 
 import com.social_comment_abbreviation_collector.DTO.response.ClaimedCrawlJob;
+import com.social_comment_abbreviation_collector.exception.RetryableCrawlException;
+import com.social_comment_abbreviation_collector.exception.SkipCrawlException;
 import com.social_comment_abbreviation_collector.processor.CrawlJobProcessor;
 import com.social_comment_abbreviation_collector.service.CrawlJobService;
 import lombok.RequiredArgsConstructor;
@@ -42,8 +44,21 @@ public class CrawlWorker {
             crawlJobService.markDone(claimedCrawlJob.jobId());
 
             log.info("[WORKER] Completed job={}", claimedCrawlJob.jobId());
-        } catch (Exception exception){
-            log.error("[WORKER] Job failed job={}", claimedCrawlJob.jobId(), exception);
+        } catch (SkipCrawlException exception) {
+
+            crawlJobService.markSkipped(claimedCrawlJob.jobId(), exception.getMessage());
+
+            log.info("[WORKER] Skipped job={} reason={}", claimedCrawlJob.jobId(), exception.getMessage());
+
+        } catch (RetryableCrawlException exception) {
+
+            log.warn("[WORKER] Retryable failure job={} reason={}", claimedCrawlJob.jobId(), exception.getMessage());
+
+            crawlJobService.markFailedAttempt(claimedCrawlJob.jobId(), exception);
+
+        } catch (Exception exception) {
+
+            log.error("[WORKER] Unexpected failure job={}", claimedCrawlJob.jobId(), exception);
 
             crawlJobService.markFailedAttempt(claimedCrawlJob.jobId(), exception);
         }

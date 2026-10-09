@@ -53,12 +53,14 @@ public class CrawlJobService {
         long countProcessing = crawlJobRepository.countByStatus(CrawlJobStatus.PROCESSING);
         long countDone = crawlJobRepository.countByStatus(CrawlJobStatus.DONE);
         long countFailed = crawlJobRepository.countByStatus(CrawlJobStatus.FAILED);
+        long countSkipped = crawlJobRepository.countByStatus(CrawlJobStatus.SKIPPED);
 
         return new CrawlJobStatusReponse(
                 countPending,
                 countProcessing,
                 countDone,
-                countFailed
+                countFailed,
+                countSkipped
         );
     }
 
@@ -146,6 +148,18 @@ public class CrawlJobService {
         }
 
         return stuckJobs.size();
+    }
+
+    @Transactional
+    public void markSkipped(String jobId, String reason){
+        CrawlJob job = crawlJobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("crawl job not found"));
+
+        if(job.getStatus() != CrawlJobStatus.PROCESSING){
+            throw new IllegalStateException("Cannot skip job from status " + job.getStatus());
+        }
+        job.setStatus(CrawlJobStatus.SKIPPED);
+        job.setFinishedAt(Instant.now());
+        job.setLastError(reason);
     }
 
     private Duration calculateBackoff(int retryCount){

@@ -4,5 +4,6 @@ public enum CrawlJobStatus {
     PENDING,
     PROCESSING,
     DONE,
-    FAILED
+    FAILED,
+    SKIPPED
 }

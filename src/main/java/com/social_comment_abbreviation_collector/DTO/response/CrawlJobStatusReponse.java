@@ -4,6 +4,7 @@ public record CrawlJobStatusReponse(
         Long pending,
         Long processing,
         Long done,
-        Long failed
+        Long failed,
+        Long skipped
 ) {
 }
