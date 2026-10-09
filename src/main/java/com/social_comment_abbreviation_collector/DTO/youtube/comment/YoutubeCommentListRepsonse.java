@@ -8,6 +8,6 @@ import java.util.List;
 public record YoutubeCommentListRepsonse(
         String nextPageToken,
         YoutubePageInfo pageInfo,
-        List<YoutubeComment> comments
+        List<YoutubeComment> items
 ) {
 }

@@ -46,7 +46,7 @@ public class YoutubeClient {
                         .queryParam("key", youtubeProperties.key());
 
                 if(pageToken != null && !pageToken.isBlank()){
-                    builder.queryParam("pgaeToken", pageToken);
+                    builder.queryParam("pageToken", pageToken);
                 }
 
                 return builder.build();
@@ -67,7 +67,7 @@ public class YoutubeClient {
                     .uri(uriBuilder -> {
                         var builder =
                                 uriBuilder
-                                        .path("/comments")
+                                        .path("/items")
                                         .queryParam("part", "snippet")
                                         .queryParam("parentId", parentCommentId)
                                         .queryParam("maxResults", 100)

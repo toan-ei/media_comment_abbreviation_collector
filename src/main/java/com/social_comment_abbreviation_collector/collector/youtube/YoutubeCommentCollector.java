@@ -2,9 +2,7 @@ package com.social_comment_abbreviation_collector.collector.youtube;
 
 
 import com.social_comment_abbreviation_collector.DTO.internal.ReplyCollectionStats;
-import com.social_comment_abbreviation_collector.DTO.response.CollectedComment;
-import com.social_comment_abbreviation_collector.DTO.response.CollectedCommentPage;
-import com.social_comment_abbreviation_collector.DTO.response.CommentCollectionResult;
+import com.social_comment_abbreviation_collector.DTO.response.*;
 import com.social_comment_abbreviation_collector.DTO.youtube.comment.YoutubeComment;
 import com.social_comment_abbreviation_collector.DTO.youtube.comment.YoutubeCommentListRepsonse;
 import com.social_comment_abbreviation_collector.DTO.youtube.comment.YoutubeCommentThreadItem;
@@ -19,7 +17,6 @@ import com.social_comment_abbreviation_collector.exception.YoutubeApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.security.PrivateKey;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -76,12 +73,14 @@ public class YoutubeCommentCollector implements CommentCollector {
     }
 
     @Override
-    public CommentCollectionResult collectAll(String videoId, CommentBatchHandle handler){
+    public CommentCollectionResult collectAll(String videoId, CommentBatchContext context, CommentBatchHandle handler){
         long topLevelCount = 0;
         long replyCount = 0;
         int threadPages = 0;
         int replyPages = 0;
         int apiCalls = 0;
+        long insertedCount = 0;
+        long duplicateCount = 0;
         String pageToken = null;
         Set<String> seenThreadTokens = new HashSet<>();
 
@@ -99,7 +98,11 @@ public class YoutubeCommentCollector implements CommentCollector {
             List<CollectedComment> topLevels = response.items().stream().map(item ->
                             youtubeCommentMapper.toTopLevel(item.snippet().topLevelComment())).toList();
 
-            handler.handle(topLevels);
+            //save
+            CommentBatchResult handle = handler.handle(context, topLevels);
+
+            insertedCount += handle.inserted();
+            duplicateCount += handle.duplicates();
             topLevelCount += topLevels.size();
 
             for (YoutubeCommentThreadItem thread : response.items()) {
@@ -124,7 +127,9 @@ public class YoutubeCommentCollector implements CommentCollector {
                             .map(reply ->
                                     youtubeCommentMapper.toReply(reply, parentId)).toList();
 
-                    handler.handle(mapped);
+                    CommentBatchResult result = handler.handle(context, mapped);
+                    insertedCount += result.inserted();
+                    duplicateCount += result.duplicates();
 
                     replyCount += mapped.size();
                     continue;
@@ -133,7 +138,7 @@ public class YoutubeCommentCollector implements CommentCollector {
                  * Embedded replies incomplete.
                  * Ignore them and retrieve ALL replies.
                  */
-                ReplyCollectionStats stats = collectAllReplies(parentId, handler);
+                ReplyCollectionStats stats = collectAllReplies(parentId,context, handler);
                 replyCount += stats.replyCount();
                 replyPages += stats.pages();
                 apiCalls += stats.apiCalls();
@@ -150,17 +155,21 @@ public class YoutubeCommentCollector implements CommentCollector {
                 topLevelCount,
                 replyCount,
                 topLevelCount + replyCount,
+                insertedCount,
+                duplicateCount,
                 threadPages,
                 replyPages,
                 apiCalls
         );
     }
 
-    private ReplyCollectionStats collectAllReplies(String parentCommentId, CommentBatchHandle handler) {
+    private ReplyCollectionStats collectAllReplies(String parentCommentId,CommentBatchContext context,  CommentBatchHandle handler) {
         String pageToken = null;
         long replyCount = 0;
         int pages = 0;
         int apiCalls = 0;
+        long insertedCount = 0;
+        long duplicateCount = 0;
 
         Set<String> seenTokens = new HashSet<>();
 
@@ -174,14 +183,17 @@ public class YoutubeCommentCollector implements CommentCollector {
                 break;
             }
 
-            List<YoutubeComment> replies = response.comments() == null ? List.of() : response.comments();
+            List<YoutubeComment> replies = response.items() == null ? List.of() : response.items();
 
             if (!replies.isEmpty()) {
                 List<CollectedComment> mapped = replies.stream()
                                 .map(reply -> youtubeCommentMapper.toReply(reply, parentCommentId))
                                 .toList();
 
-                handler.handle(mapped);
+                CommentBatchResult handle = handler.handle(context, mapped);
+
+                insertedCount += handle.inserted();
+                duplicateCount += handle.duplicates();
                 replyCount += mapped.size();
             }
 
@@ -192,6 +204,8 @@ public class YoutubeCommentCollector implements CommentCollector {
 
         return new ReplyCollectionStats(
                 replyCount,
+                insertedCount,
+                duplicateCount,
                 pages,
                 apiCalls
         );

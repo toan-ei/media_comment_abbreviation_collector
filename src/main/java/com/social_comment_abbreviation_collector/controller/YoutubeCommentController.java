@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class YoutubeCommentController {
     private final YoutubeCommentCollector youtubeCommentCollector;
 
-    @GetMapping("/{videoId}/comments")
+    @GetMapping("/{videoId}/items")
     public CollectedCommentPage getComments(@PathVariable String videoId){
         return youtubeCommentCollector.collectPage(videoId, null);
     }

@@ -103,6 +103,7 @@ public class CrawlJobService {
         job.setStatus(CrawlJobStatus.DONE);
         job.setFinishedAt(Instant.now());
         job.setLastError(null);
+        job.getContent().setLastCrawledAt(Instant.now());
     }
 
     @Transactional
